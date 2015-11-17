@@ -382,6 +382,70 @@ namespace TSMADump
 
         }
 
+        class UpdateUserForward2Command : Command
+        {
+
+            public override String getCommand()
+            {
+                return "UPDATEUSERFORWARD2";
+            }
+
+            public override String getHelp()
+            {
+
+                return (
+                    "Updates the specified user's forwarding settings (Multiple addresses)." + LF +
+                    "Username/password provided must be requested user or domain or system admin." + LF +
+                    "Specify a forwarding address to enable forwarding." + LF +
+                    LF +
+                    "No output if successful."
+                  );
+            }
+
+            public override String[] getArgs()
+            {
+                return (
+                    new String[] {
+
+                        "UserName  - the email address to update forwarding info for",
+                        "Delete    - Delete the email after forwarding?",
+                        "Forward   - destination email address(es) to forward to. Multipule addresses seporated by a semicolon",
+
+                    }
+                );
+
+            }
+
+
+            public override int function(String[] args)
+            {
+
+
+                SvcUserAdmin.svcUserAdmin a = new TSMADump.SvcUserAdmin.svcUserAdmin();
+
+                a.Url = baseURL + "/Services/svcUserAdmin.asmx";
+
+                string[] forwards = (args[2]).Split( new String[] {";",","} , StringSplitOptions.RemoveEmptyEntries );
+
+                p("Updating "+forwards.Length +" forwards to URL [" + a.Url + "]");
+
+                SvcUserAdmin.GenericResult genericResult = a.UpdateUserForwardingInfo2( username, password, args[0], args[1].Equals("Y") || args[1].Equals("y"), forwards  );
+
+                if (!genericResult.Result)
+                {
+
+                    throw new Exception(genericResult.Message);
+
+                }
+
+                p("Completed successfully");
+
+                return 1;
+
+            }
+
+        }
+
 
         class UserAutoResponseCommand : Command
         {
@@ -1430,6 +1494,7 @@ namespace TSMADump
             new AddUserCommand2(),
             new UpdateUser2Command(),
             new UpdateUserForwardCommand(),
+            new UpdateUserForward2Command(),
             new DeleteUserCommand(),
             new AddAliasCommand(),
             new DomainSettingCommand(),
