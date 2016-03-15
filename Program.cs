@@ -61,6 +61,22 @@ namespace TSMADump
                 }
 
             }
+
+            public void printHelp()
+            {
+                p("Usage for command: " + getCommand());
+                p(getHelp());
+                p("");
+                p("Arguments:");
+
+                foreach(String s in getArgs())
+                {
+
+                    p(s);
+
+                }
+
+            }
         
             protected void output(String s)
             {
@@ -1340,6 +1356,70 @@ namespace TSMADump
         }
 
 
+        class AddDomainExCommand : Command
+        {
+
+            public override String getCommand()
+            {
+                return "ADDDOMAINEX";
+            }
+
+            public override String getHelp()
+            {
+
+                return (
+                    "Creates a new domain using the system's default domain settings." + LF +
+                    "Username/password provided must be domain admin or system admin." + LF
+                  );
+            }
+
+            public override String[] getArgs()
+            {
+                return (
+                    new String[] {
+                        "DomainName                  - The name of the domain name to add, in the format 'example.com'.",
+                        "Path                        - The full path of the location in which the domain data should be stored.",
+                        "PrimaryDomainAdminUserName  - The username for the domain administrator.",
+                        "PrimaryDomainAdminPassword  - The password for the domain administrator.",
+                        "PrimaryDomainAdminFirstName - The first name for the domain administrator.",
+                        "PrimaryDomainAdminLastName  - The last name for the domain administrator.",
+                        "IP                          - The IP Address on which the domain should listen.",
+                    }
+                );
+
+            }
+
+
+
+
+            public override int function(String[] args)
+            {
+
+                SvcDomainAdmin.svcDomainAdmin a = new TSMADump.SvcDomainAdmin.svcDomainAdmin();
+
+                a.Url = baseURL + "/Services/svcDomainAdmin.asmx";
+
+                p("Adding domain " + args[0] + " with URL [" + a.Url + "]");
+
+                SvcDomainAdmin.GenericResult domainAddDomainExResult = a.AddDomainEx(username, password, args[0], args[1], args[2], args[3], args[4], args[5] , args[6] );
+
+                if (!domainAddDomainExResult.Result)
+                {
+
+                    throw new Exception(domainAddDomainExResult.Message);
+                }
+
+                p("Completed successfully");
+
+                return 1;
+
+            }
+
+        }
+
+
+
+
 
 
 
@@ -1482,7 +1562,7 @@ namespace TSMADump
 
         static Command[] commands = {
 
-            new UserAdminCommand(),                                            
+            new UserAdminCommand(),
             new AliasAdminCommand(),
             new AliasAddressCommand(),
             new DomainAdminCommand(),
@@ -1498,6 +1578,7 @@ namespace TSMADump
             new DeleteUserCommand(),
             new AddAliasCommand(),
             new DomainSettingCommand(),
+            new AddDomainExCommand(),
             new AddDomainAliasCommand(),
             new UserSettingCommand(),
             new SetCatchAllCommand(),
@@ -1598,6 +1679,23 @@ namespace TSMADump
                 return (1);
             }
 
+
+            // Print help on all commands...
+
+            if (String.Equals(args[arg].ToUpper(), "ALL"))
+            {
+                foreach( Command c in commands)
+                {
+                    p("---");
+                    c.printHelp();
+                    p("");
+
+                }
+
+                return (3);
+            }
+
+
             foreach (Command c in commands)
             {
 
@@ -1608,26 +1706,10 @@ namespace TSMADump
 
                     arg++;      // Skip command
 
-                    if (arg == args.Length)
+                    if (arg == args.Length)  // If no args specified then 
                     {  // Get help on specified command
 
-                        p(c.getHelp());
-
-                        if (c.getArgs().Length>0)
-                        {
-
-                            p("");
-                            p("Additional parameters for the " + c.getCommand() + " command:");
-
-                            foreach (String s in c.getArgs())
-                            {
-
-                                p("  " + s);
-
-                            }
-
-                        }
-
+                        c.printHelp();
 
                         return (3);
 
