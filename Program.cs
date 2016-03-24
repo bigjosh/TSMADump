@@ -13,7 +13,8 @@ namespace TSMADump
 
         }
 
-        abstract class Command {
+        abstract class Command : IComparable<Command>
+        {
 
 
             // New commands must implement these...
@@ -182,6 +183,10 @@ namespace TSMADump
 
             }
 
+            public int CompareTo(Command x)
+            {
+                return getCommand().CompareTo(x.getCommand());
+            }
         }
 
 
@@ -861,6 +866,81 @@ namespace TSMADump
 
         }
 
+        class GetRequestedUserSettingsCommand : Command
+        {
+
+            public override String getCommand()
+            {
+                return "GETUSERSETTINGS";
+            }
+
+            public override String getHelp()
+            {
+
+                return (
+                    "Gets the value of a specified setting(s) for a given user." + LF +
+                    "Username/password provided must be requested user or domain or system admin." + LF +
+                    LF +
+                    "Outputs the requested setting(s) if successfull."
+
+                  );
+            }
+
+            public override String[] getArgs()
+            {
+                return (
+                    new String[] {
+
+                        "EmailAddress- email address of requested user" ,
+                        "Setting - List of one or more setting keys (names) to get. Multipule settings should be comma separated." ,
+                    }
+                );
+
+            }
+
+
+            public override int function(String[] args)
+            {
+
+                SvcUserAdmin.svcUserAdmin a = new TSMADump.SvcUserAdmin.svcUserAdmin();
+
+                a.Url = baseURL + "/Services/svcUserAdmin.asmx";
+
+                p("Adding user with URL [" + a.Url + "]");
+
+
+                char[] comma = { ',' };
+
+                String[] requestedSettings = args[1].Split(comma);
+
+                SvcUserAdmin.SettingsRequestResult r = a.GetRequestedUserSettings(username, password, args[0], requestedSettings);
+
+                if (!r.Result)
+                {
+                    throw new Exception(r.Message);
+                }
+
+                List<String> extractedValues = new List<string>(); 
+                
+                foreach( String value in r.settingValues )
+                {
+
+                    extractedValues.Add(value.Split('=')[1]);
+                }
+
+
+
+                output( quotedList(   extractedValues.ToArray() ));
+
+                p("Completed successfully");
+
+                return 1;
+
+            }
+
+        }
+
+
 
         class AddUserCommand2 : Command
         {
@@ -916,7 +996,7 @@ namespace TSMADump
                 if (!r.Result)
                 {
                     throw new Exception(r.Message);
-                }
+                }              
 
 
                 p("Completed successfully");
@@ -1582,6 +1662,7 @@ namespace TSMADump
             new AddDomainAliasCommand(),
             new UserSettingCommand(),
             new SetCatchAllCommand(),
+            new GetRequestedUserSettingsCommand(),
 
 
         };
@@ -1622,6 +1703,32 @@ namespace TSMADump
                         p("Output fields will be seporated with commas.");
 
                         break;
+
+                    case 'L':      // List all commands - undocumented
+
+
+                        List<Command> sortedCommandList = new List<Command>( commands );
+
+                        sortedCommandList.Sort();
+
+                        foreach( Command c in sortedCommandList )
+                        {
+                            String name = c.getCommand();
+
+                            p(c.getCommand());
+                            p(new string('-', name.Length));
+                            p("  "+c.getHelp());
+                            p("");
+                            p("  Additional parameters:");
+                            foreach( String a in c.getArgs())
+                            {
+                                p("    " + a);
+                            }
+                            p("");
+
+                        }
+
+                        return(1);
 
 
                     default:
