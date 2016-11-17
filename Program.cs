@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
+using System.Linq;
+
 namespace TSMADump
 {
     class Program
@@ -1306,9 +1308,6 @@ namespace TSMADump
         }
 
 
-
-
-
         class DomainAliasCommand : Command
         {
 
@@ -1640,6 +1639,79 @@ namespace TSMADump
 
         }
 
+
+        class GetUserGroupsByUserCommand : Command
+        {
+
+            public override String getCommand()
+            {
+                return "GETUSERGROUPSBYUSER";
+            }
+
+            public override String getHelp()
+            {
+
+                return (
+                    "Dump the all user group IDs in the specified domain containing the specified user." + LF +
+                    "Username/password provided must be domain admin or system admin or the requested user." + LF +
+                    LF +
+                    "Outputs the requested setting"
+                  );
+            }
+
+            public override String[] getArgs()
+            {
+                return (
+                    new String[] {
+
+                        "Domain - Name o fthe Domain" ,
+                        "User - User name to dump"
+
+                    }
+                );
+
+            }
+
+
+            public override int function(String[] args)
+            {
+
+
+                SvcUserAdmin.svcUserAdmin a = new TSMADump.SvcUserAdmin.svcUserAdmin();
+
+                a.Url = baseURL + "/Services/svcUserAdmin.asmx";
+
+                p("Fetchcing user groups from URL [" + a.Url + "]");
+
+                String domain = args[1];
+                String user = args[1];
+
+                p("DomainName=" +domain+ " UserName=" + user);
+
+
+                SvcUserAdmin.UserGroupsResult userGroupsRequestResult= a.GetUserGroupsByUser( username, password, domain, user, false );
+
+                if (!userGroupsRequestResult.Result)
+                {
+
+                    throw new Exception(userGroupsRequestResult.Message);
+                }
+
+                String[] groupIds = (from groupId in userGroupsRequestResult.UserGroups select groupId.guid).ToArray<String>();
+                
+                output(quotedList(groupIds));
+
+                p("Completed successfully");
+
+                return 1;
+
+            }
+
+
+
+        }
+
+
         static Command[] commands = {
 
             new UserAdminCommand(),
@@ -1663,6 +1735,7 @@ namespace TSMADump
             new UserSettingCommand(),
             new SetCatchAllCommand(),
             new GetRequestedUserSettingsCommand(),
+            new GetUserGroupsByUserCommand(),
 
 
         };
